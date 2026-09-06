@@ -1,0 +1,34 @@
+services:
+  service:
+    restart: always
+    env_file:
+      - .env
+    build: .
+    depends_on:
+      - migrate
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    command: ["-path", "/migrations", "-database", "${DB_CONN}", "up"]
+    restart: no
+
+  postgres:
+    restart: always
+    ports:
+      - "5432:5432"
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      retries: 5
