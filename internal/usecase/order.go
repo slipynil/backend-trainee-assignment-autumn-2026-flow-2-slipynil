@@ -14,6 +14,10 @@ type OrderUseCase struct {
 	repo repository.OrderRepository
 }
 
+func NewOrderUseCase(repo repository.OrderRepository) *OrderUseCase {
+	return &OrderUseCase{repo: repo}
+}
+
 // CreateOrder создает новый заказ
 func (orderUC *OrderUseCase) CreateOrder(ctx context.Context, clientID int, deliveryAddress string, items []dto.OrderItem) (model.Order, error) {
 	convertedItems := make([]model.OrderItem, len(items))
@@ -86,4 +90,11 @@ func (orderUC *OrderUseCase) UpdateOrderStatus(
 
 	// 3. Обновляем статус
 	return orderUC.repo.UpdateStatus(ctx, order.ID, status)
+}
+
+// GetOrderWithDetails возвращает заказ со всеми подзаказами через GetByIDWithSubOrders.
+// Репозиторий уже группирует позиции по ресторанам при создании,
+// здесь просто прокидываем вызов.
+func (orderUC *OrderUseCase) GetOrderWithDetails(ctx context.Context, orderID int) (model.Order, error) {
+	return orderUC.repo.GetByIDWithSubOrders(ctx, orderID)
 }
