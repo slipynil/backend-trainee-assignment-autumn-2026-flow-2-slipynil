@@ -1,0 +1,57 @@
+@startuml cjm-restaurant
+' Customer Journey Map ресторана-партнёра Авито.Кухня
+title CJM ресторана — Авито.Кухня
+
+|Ресторан|
+start
+:Регистрируется на платформе\nполучает API-ключ;
+note right
+  Ключ хранится в restaurant_api_keys,
+  передаётся в заголовке
+  X-Restaurant-API-Key.
+  Пример: Додо Пицца —
+  dodo-pizza-secret-key-12345
+end note
+:Загружает меню\nPOST /api/v1/restaurant/products;
+note right
+  Пример: Маргарита 450 ₽,
+  Пепперони 550 ₽, 4 сыра 600 ₽
+end note
+:Опрашивает новые подзаказы (polling)\nGET /api/v1/restaurant/orders\nкаждые 5 секунд;
+if (Есть новые подзаказы\nв статусе pending?) then (да)
+  :Принимает подзаказ\nPATCH .../sub-orders/{id}/status\n{status: accepted};
+  note right
+    Проверка владения: подзаказ
+    должен принадлежать ресторану
+    из API-ключа
+  end note
+  :Начинает приготовление\n{status: preparing};
+  :Завершает приготовление\n{status: ready};
+  note right
+    restaurant-service проходит цикл
+    автоматически: pending -> accepted
+    (3 сек) -> preparing (5 сек)
+    -> ready (10 сек)
+  end note
+else (нет)
+  :Продолжает polling;
+endif
+:Управляет наличием и ценами\nPATCH /api/v1/restaurant/products/{id}\nDELETE /api/v1/restaurant/products/{id};
+note right
+  Снятие с продажи: is_available = false.
+  Недоступный товар виден в меню,
+  но не попадает в новые заказы —
+  главная точка трения пользователя
+end note
+if (Не может выполнить подзаказ?) then (да)
+  :Отменяет подзаказ\n{status: cancelled};
+  note right
+    Пользователь получает частичный заказ,
+    платформа пересчитывает итог
+  end note
+else (нет)
+  :Передаёт готовые блюда\nна выдачу/доставку;
+endif
+stop
+
+@enduml

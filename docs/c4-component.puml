@@ -1,0 +1,38 @@
+@startuml c4-component
+' C4 Level 3: Component diagram API Service — Авито.Кухня
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Level 3 (Component) — API Service, Авито.Кухня
+
+Container_Boundary(api, "API Service (Go + Echo)") {
+  Component(handlers, "HTTP Handlers", "internal/delivery", "Реализуют ServerInterface из oapi-codegen: GetRestaurants, GetRestaurant, GetRestaurantMenu, CreateOrder, GetOrder, GetRestaurantOrders, UpdateSubOrderStatus, GetMyProducts, CreateProduct, UpdateProduct, DeleteProduct")
+  Component(mw, "Middleware", "internal/delivery", "RestaurantAuthMiddleware: извлекает X-Restaurant-API-Key, проверяет через restaurantUC.ValidateAPIKey, кладёт restaurant_id в контекст")
+  Component(ucre, "Restaurant UseCase", "internal/usecase", "GetAll, GetByID, GetMenu, ValidateAPIKey")
+  Component(ucso, "SubOrder UseCase", "internal/usecase", "GetPendingOrders, UpdateStatus (с проверкой владения)")
+  Component(uco, "Order UseCase", "internal/usecase", "CreateOrder (группировка позиций по ресторанам), GetOrderWithDetails")
+  Component(ucp, "Product UseCase", "internal/usecase", "GetByRestaurant, Create/Update/DeleteProduct (с проверкой владения)")
+  Component(rre, "Restaurant Repository", "internal/repository", "GetAll, GetByID, GetByAPIKey")
+  Component(rso, "SubOrder Repository", "internal/repository", "Create, GetByOrderID, GetByRestaurant, UpdateStatus, GetByID")
+  Component(ro, "Order Repository", "internal/repository", "Create (order + sub_orders + order_items), GetByID, GetByIDWithSubOrders")
+  Component(rp, "Product Repository", "internal/repository", "GetByRestaurant, Create, Update, Delete")
+}
+
+ContainerDb(db, "PostgreSQL", "PostgreSQL 18", "users, restaurants, restaurant_api_keys, products, orders, sub_orders, order_items")
+
+Rel(handlers, mw, "Партнёрские роуты идут через", "")
+Rel(handlers, ucre, "Использует", "")
+Rel(handlers, ucso, "Использует", "")
+Rel(handlers, uco, "Использует", "")
+Rel(handlers, ucp, "Использует", "")
+Rel(mw, ucre, "ValidateAPIKey", "")
+Rel(ucre, rre, "Использует", "SQL")
+Rel(ucso, rso, "Использует", "SQL")
+Rel(uco, ro, "Использует", "SQL")
+Rel(uco, rso, "Читает подзаказы", "SQL")
+Rel(ucp, rp, "Использует", "SQL")
+Rel(rre, db, "SQL", "")
+Rel(rso, db, "SQL", "")
+Rel(ro, db, "SQL", "")
+Rel(rp, db, "SQL", "")
+
+@enduml

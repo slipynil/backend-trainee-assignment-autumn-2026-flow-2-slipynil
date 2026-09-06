@@ -1,0 +1,80 @@
+@startuml er-diagram
+' ER-диаграмма БД Авито.Кухня (по migrations/*.sql и PLAN.md)
+title ER-диаграмма — Авито.Кухня
+
+entity users {
+  * id : SERIAL <<PK>>
+  --
+  * role : VARCHAR(255)
+  * created_at : TIMESTAMP
+}
+
+entity restaurants {
+  * id : SERIAL <<PK>>
+  --
+  * name : VARCHAR(255)
+  description : TEXT
+  * address : VARCHAR(500)
+  phone : VARCHAR(20)
+  * is_active : BOOLEAN
+  * created_at : TIMESTAMP
+}
+
+entity restaurant_api_keys {
+  * id : SERIAL <<PK>>
+  --
+  * restaurant_id : INTEGER <<FK>>
+  * api_key : VARCHAR(64) <<UQ>>
+  * is_active : BOOLEAN
+  * created_at : TIMESTAMP
+}
+
+entity products {
+  * id : SERIAL <<PK>>
+  --
+  * restaurant_id : INTEGER <<FK, NOT NULL>>
+  * name : VARCHAR(255)
+  description : TEXT
+  * price : DECIMAL(10,2)
+  * is_available : BOOLEAN
+}
+
+entity orders {
+  * id : SERIAL <<PK>>
+  --
+  * client_id : INTEGER
+  * status : VARCHAR(255)
+  * total_price : DECIMAL(10,2)
+  * created_at : TIMESTAMP
+  * delivery_address : VARCHAR(255)
+}
+
+entity sub_orders {
+  * id : SERIAL <<PK>>
+  --
+  * order_id : INTEGER <<FK>>
+  * restaurant_id : INTEGER <<FK>>
+  * status : VARCHAR(50)\npending | accepted | preparing | ready | cancelled
+  * subtotal : DECIMAL(10,2)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity order_items {
+  * id : SERIAL <<PK>>
+  --
+  * sub_order_id : INTEGER <<FK>>
+  * product_id : INTEGER <<FK>>
+  * quantity : INTEGER
+  * price_at_moment : DECIMAL(10,2)
+}
+
+users ||--o{ orders : "1---* (client_id, без FK)"
+orders ||--o{ sub_orders : "1---* (order_id, ON DELETE CASCADE)"
+restaurants ||--o{ sub_orders : "1---* (restaurant_id)"
+restaurants ||--o{ products : "1---* (restaurant_id, ON DELETE CASCADE)"
+restaurants ||--o{ restaurant_api_keys : "1---* (restaurant_id, ON DELETE CASCADE)"
+sub_orders ||--o{ order_items : "1---* (sub_order_id, ON DELETE CASCADE)"
+products ||--o{ order_items : "1---* (product_id)"
+
+@enduml
