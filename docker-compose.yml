@@ -4,8 +4,24 @@ services:
     env_file:
       - .env
     build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
     depends_on:
       - migrate
+
+  restaurant-service:
+    restart: always
+    build:
+      context: .
+      dockerfile: cmd/restaurant-service/Dockerfile
+    environment:
+      - PLATFORM_API_URL=http://service:8080
+      - RESTAURANT_API_KEY=dodo-pizza-secret-key-12345
+      - RESTAURANT_ID=1
+    depends_on:
+      - service
 
   migrate:
     image: migrate/migrate
