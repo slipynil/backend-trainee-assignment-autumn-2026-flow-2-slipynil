@@ -19,3 +19,27 @@ run = "migrate -path migrations -database $DB_CONN up"
 [tasks.migrate-down]
 description = "Rollback database migrations"
 run = "migrate -path migrations -database $DB_CONN down"
+
+[tasks.lint]
+description = "Линтинг"
+run = "golangci-lint run ./..."
+
+[tasks.generate]
+description = "Генерация API из OpenAPI"
+run = "oapi-codegen -package api -generate types,server,client -o internal/api/generated.go docs/openapi.yaml"
+
+[tasks.build]
+description = "Сборка обоих сервисов"
+run = "go build -o bin/server ./cmd/server && go build -o bin/restaurant-service ./cmd/restaurant-service"
+
+[tasks.up]
+description = "Поднять всё в Docker"
+run = "docker compose up -d --build"
+
+[tasks.down]
+description = "Остановить всё"
+run = "docker compose down"
+
+[tasks.logs]
+description = "Логи всех сервисов"
+run = "docker compose logs -f"
