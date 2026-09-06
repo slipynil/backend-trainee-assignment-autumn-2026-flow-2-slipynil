@@ -1,0 +1,336 @@
+openapi: 3.0.0
+info:
+  title: Avito.Kitchen API
+  version: 1.0.0
+  description: API для заказа еды из разных ресторанов
+
+servers:
+  - url: http://localhost:8080
+    description: Local server
+
+paths:
+  /api/v1/restaurants:
+    get:
+      operationId: GetRestaurants
+      summary: Список ресторанов
+      responses:
+        '200':
+          description: Список ресторанов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Restaurant'
+
+  /api/v1/restaurants/{id}:
+    get:
+      operationId: GetRestaurant
+      summary: Детали ресторана
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Детали ресторана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+        '404':
+          description: Ресторан не найден
+
+  /api/v1/restaurants/{id}/products:
+    get:
+      operationId: GetRestaurantMenu
+      summary: Меню ресторана
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Меню ресторана
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '404':
+          description: Ресторан не найден
+
+  /api/v1/orders:
+    post:
+      operationId: CreateOrder
+      summary: Создание заказа (товары из разных ресторанов)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Заказ создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Некорректный запрос
+
+  /api/v1/orders/{id}:
+    get:
+      operationId: GetOrder
+      summary: Детали заказа с подзаказами
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Детали заказа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Заказ не найден
+
+  /api/v1/restaurant/orders:
+    get:
+      operationId: GetRestaurantOrders
+      summary: Получить новые подзаказы (polling)
+      security:
+        - RestaurantApiKey: []
+      responses:
+        '200':
+          description: Список подзаказов ресторана
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubOrder'
+        '401':
+          description: Не авторизован
+
+  /api/v1/restaurant/sub-orders/{id}/status:
+    patch:
+      operationId: UpdateSubOrderStatus
+      summary: Обновить статус подзаказа
+      security:
+        - RestaurantApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubOrderStatusRequest'
+      responses:
+        '200':
+          description: Статус обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubOrder'
+        '400':
+          description: Некорректный запрос
+        '401':
+          description: Не авторизован
+        '404':
+          description: Подзаказ не найден
+
+  /api/v1/restaurant/products:
+    get:
+      operationId: GetMyProducts
+      summary: Список своих продуктов
+      security:
+        - RestaurantApiKey: []
+      responses:
+        '200':
+          description: Список продуктов ресторана
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '401':
+          description: Не авторизован
+    post:
+      operationId: CreateProduct
+      summary: Добавить продукт
+      security:
+        - RestaurantApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '201':
+          description: Продукт создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Некорректный запрос
+        '401':
+          description: Не авторизован
+
+  /api/v1/restaurant/products/{id}:
+    patch:
+      operationId: UpdateProduct
+      summary: Обновить продукт (цена, наличие)
+      security:
+        - RestaurantApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '200':
+          description: Продукт обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Некорректный запрос
+        '401':
+          description: Не авторизован
+        '404':
+          description: Продукт не найден
+    delete:
+      operationId: DeleteProduct
+      summary: Удалить продукт
+      security:
+        - RestaurantApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Продукт удален
+        '401':
+          description: Не авторизован
+        '404':
+          description: Продукт не найден
+
+components:
+  schemas:
+    Restaurant:
+      type: object
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        description: {type: string}
+        address: {type: string}
+        phone: {type: string}
+        is_active: {type: boolean}
+        created_at: {type: string, format: date-time}
+
+    Product:
+      type: object
+      properties:
+        id: {type: integer}
+        restaurant_id: {type: integer}
+        name: {type: string}
+        description: {type: string}
+        price: {type: number, format: double}
+        is_available: {type: boolean}
+
+    Order:
+      type: object
+      properties:
+        id: {type: integer}
+        client_id: {type: integer}
+        delivery_address: {type: string}
+        total_price: {type: number}
+        created_at: {type: string, format: date-time}
+        sub_orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubOrder'
+
+    SubOrder:
+      type: object
+      properties:
+        id: {type: integer}
+        order_id: {type: integer}
+        restaurant_id: {type: integer}
+        status:
+          type: string
+          enum: [pending, accepted, preparing, ready, cancelled]
+        subtotal: {type: number}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    OrderItem:
+      type: object
+      properties:
+        id: {type: integer}
+        sub_order_id: {type: integer}
+        product_id: {type: integer}
+        quantity: {type: integer}
+        price_at_moment: {type: number}
+
+    CreateOrderRequest:
+      type: object
+      required: [client_id, delivery_address, items]
+      properties:
+        client_id: {type: integer}
+        delivery_address: {type: string}
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id: {type: integer}
+              quantity: {type: integer}
+
+    UpdateSubOrderStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [accepted, preparing, ready, cancelled]
+
+  securitySchemes:
+    RestaurantApiKey:
+      type: apiKey
+      in: header
+      name: X-Restaurant-API-Key
