@@ -1,0 +1,21 @@
+[tools]
+go = "1.26.4"
+
+[env]
+_.file = ".env"
+
+[tasks.server]
+description = "Run the containerized server"
+run = "docker compose up"
+
+[tasks.client]
+description = "Run client app"
+run = "go run ./cmd/client/main.go"
+
+[tasks.migrate-up]
+description = "Upgrade database migrations"
+run = "migrate -path migrations -database $DB_CONN up"
+
+[tasks.migrate-down]
+description = "Rollback database migrations"
+run = "migrate -path migrations -database $DB_CONN down"
