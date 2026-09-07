@@ -58,6 +58,12 @@ func isInvalid(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "invalid status")
 }
 
+// isOrderProductError определяет ошибки создания заказа, связанные
+// с отсутствием или недоступностью товара (маппятся на 400).
+func isOrderProductError(err error) bool {
+	return errors.Is(err, model.ErrProductNotFound) || errors.Is(err, model.ErrProductUnavailable)
+}
+
 // --- маппинг model -> api ---
 
 func toAPIRestaurant(r model.Restaurant) api.Restaurant {
@@ -210,6 +216,9 @@ func (h *Handler) CreateOrder(ctx echo.Context) error {
 
 	order, err := h.orderUC.CreateOrder(ctx.Request().Context(), req.ClientId, req.DeliveryAddress, items)
 	if err != nil {
+		if isOrderProductError(err) {
+			return ctx.JSON(http.StatusBadRequest, errBody(err.Error()))
+		}
 		return ctx.JSON(http.StatusInternalServerError, errBody(err.Error()))
 	}
 	return ctx.JSON(http.StatusCreated, toAPIOrder(order))

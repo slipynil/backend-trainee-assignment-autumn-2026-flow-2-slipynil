@@ -1,6 +1,16 @@
 package model
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+// Доменные ошибки создания заказа, на которые опирается слой delivery
+// для выбора корректного HTTP-кода (400 вместо 500).
+var (
+	ErrProductNotFound    = errors.New("product not found")
+	ErrProductUnavailable = errors.New("product unavailable")
+)
 
 type User struct {
 	ID        int       `json:"id"`
