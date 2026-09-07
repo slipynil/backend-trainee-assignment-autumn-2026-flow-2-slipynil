@@ -4,14 +4,15 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/slipynil/avito-kitchen/internal/model"
 )
 
 type ProductRepository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewProductRepository(db *pgx.Conn) *ProductRepository {
+func NewProductRepository(db *pgxpool.Pool) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 

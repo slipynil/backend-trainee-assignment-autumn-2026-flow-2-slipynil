@@ -4,23 +4,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Подключение к БД
-func Connect(ctx context.Context, connString string) (*pgx.Conn, error) {
-
+// Connect создаёт пул соединений к PostgreSQL.
+// Пул потокобезопасен и предназначен для использования из многих горутины.
+func Connect(ctx context.Context, connString string) (*pgxpool.Pool, error) {
 	if len(connString) == 0 {
 		return nil, fmt.Errorf("connString is empty")
 	}
 
-	conn, err := pgx.Connect(ctx, connString)
+	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := conn.Ping(ctx); err != nil {
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, err
 	}
-	return conn, nil
+	return pool, nil
 }

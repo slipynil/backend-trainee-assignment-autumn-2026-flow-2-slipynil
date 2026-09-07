@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
-	defer db.Close(context.Background())
+	defer db.Close()
 
 	// Репозитории
 	restaurantRepo := repository.NewRestaurantRepository(db)

@@ -9,7 +9,10 @@ services:
     environment:
       - PORT=8080
     depends_on:
-      - migrate
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   restaurant-service:
     restart: always

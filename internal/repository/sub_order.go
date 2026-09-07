@@ -4,14 +4,15 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/slipynil/avito-kitchen/internal/model"
 )
 
 type SubOrderRepository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewSubOrderRepository(db *pgx.Conn) *SubOrderRepository {
+func NewSubOrderRepository(db *pgxpool.Pool) *SubOrderRepository {
 	return &SubOrderRepository{db: db}
 }
 

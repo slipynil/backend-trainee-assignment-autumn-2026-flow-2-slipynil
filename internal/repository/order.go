@@ -2,17 +2,19 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/slipynil/avito-kitchen/internal/model"
 )
 
 type OrderRepository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewOrderRepository(db *pgx.Conn) *OrderRepository {
+func NewOrderRepository(db *pgxpool.Pool) *OrderRepository {
 	return &OrderRepository{db: db}
 }
 
@@ -30,7 +32,7 @@ func (r *OrderRepository) Create(ctx context.Context, clientID int, deliveryAddr
 	if err != nil {
 		return model.Order{}, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }() // после Commit откат не требуется
 
 	// 1. Запрашиваем restaurant_id и цену для каждого product_id.
 	type productInfo struct {
@@ -39,10 +41,17 @@ func (r *OrderRepository) Create(ctx context.Context, clientID int, deliveryAddr
 	}
 	infos := make([]productInfo, len(items))
 	for i := range items {
-		const priceQuery = `SELECT restaurant_id, price FROM products WHERE id = $1`
-		err := tx.QueryRow(ctx, priceQuery, items[i].ProductID).Scan(&infos[i].restaurantID, &infos[i].price)
+		const priceQuery = `SELECT restaurant_id, price, is_available FROM products WHERE id = $1`
+		var available bool
+		err := tx.QueryRow(ctx, priceQuery, items[i].ProductID).Scan(&infos[i].restaurantID, &infos[i].price, &available)
 		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return model.Order{}, fmt.Errorf("product %d: %w", items[i].ProductID, model.ErrProductNotFound)
+			}
 			return model.Order{}, err
+		}
+		if !available {
+			return model.Order{}, fmt.Errorf("product %d: %w", items[i].ProductID, model.ErrProductUnavailable)
 		}
 		items[i].PriceAtMoment = infos[i].price
 	}
