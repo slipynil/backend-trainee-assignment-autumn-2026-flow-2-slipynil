@@ -83,7 +83,7 @@ func fetchOrders(client *http.Client, baseURL, apiKey string) ([]subOrderDTO, er
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // ошибка закрытия тела не влияет на результат
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &httpError{method: http.MethodGet, url: url, code: resp.StatusCode}
@@ -123,7 +123,7 @@ func updateStatus(client *http.Client, baseURL, apiKey string, subOrderID int, s
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // ошибка закрытия тела не влияет на результат
 
 	if resp.StatusCode != http.StatusOK {
 		return &httpError{method: http.MethodPatch, url: url, code: resp.StatusCode}
