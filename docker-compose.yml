@@ -1,0 +1,53 @@
+services:
+  service:
+    restart: always
+    env_file:
+      - .env
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  restaurant-service:
+    restart: always
+    build:
+      context: .
+      dockerfile: cmd/restaurant-service/Dockerfile
+    environment:
+      - PLATFORM_API_URL=http://service:8080
+      - RESTAURANT_API_KEY=dodo-pizza-secret-key-12345
+      - RESTAURANT_ID=1
+    depends_on:
+      - service
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    command: ["-path", "/migrations", "-database", "${DB_CONN}", "up"]
+    restart: no
+
+  postgres:
+    restart: always
+    ports:
+      - "5432:5432"
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      retries: 5

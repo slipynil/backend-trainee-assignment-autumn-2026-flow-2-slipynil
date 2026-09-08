@@ -1,0 +1,23 @@
+@startuml c4-container
+' C4 Level 2: Container diagram — Авито.Кухня
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Level 2 (Container) — Авито.Кухня
+
+Person(user, "Пользователь", "Гость web-версии: смотрит рестораны и меню, оформляет заказы")
+Person(staff, "Персонал ресторана", "Работает через Restaurant Service или напрямую с API")
+
+System_Boundary(kitchen, "Авито.Кухня") {
+  Container(api, "API Service", "Go + Echo", "Единый HTTP API: пользовательские эндпоинты /api/v1/ и партнёрские /api/v1/restaurant/ (авторизация по X-Restaurant-API-Key)")
+  Container(rsvc, "Restaurant Service", "Go", "Сервис-имитатор заведения: polling GET /restaurant/orders каждые 5 сек, прогон статусов pending -> accepted -> preparing -> ready")
+  ContainerDb(db, "PostgreSQL", "PostgreSQL 18", "users, restaurants, restaurant_api_keys, products, orders, sub_orders, order_items")
+  Container(migrate, "Migrate", "migrate/migrate", "Применяет SQL-миграции из ./migrations при старте")
+}
+
+Rel(user, api, "HTTPS: каталог, меню, заказы", "JSON /api/v1/")
+Rel(staff, rsvc, "Наблюдает/управляет", "")
+Rel(rsvc, api, "Polling заказов и смена статусов", "JSON /api/v1/restaurant/ + X-Restaurant-API-Key")
+Rel(api, db, "Читает/пишет", "SQL")
+Rel(migrate, db, "Применяет миграции", "SQL")
+
+@enduml
